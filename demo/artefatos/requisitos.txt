@@ -1,0 +1,160 @@
+Como um Analista de Requisitos Sênior, eu reestruturei, refinei e expandi a sua especificação original. Foram aplicadas todas as melhorias técnicas discutidas: separação de Ativos Biológicos (Animais), controle de Estoque em Trânsito, janelas de alertas dinâmicas, fator de conversão de unidades de medida, operação offline no campo, alçadas de aprovação de perdas e bloqueios sanitários automáticos.
+
+A documentação abaixo foi elevada para o padrão Enterprise, pronta para desenvolvimento, arquitetura de dados e escrita de User Stories.
+
+Especificação de Requisitos de Software (SRS)
+Sistema de Controle de Estoque Agropecuário Corporativo
+Versão: 2.0 (Refinada)
+
+Status: Pronta para Modelagem / Sprints
+
+1. Objetivo
+Controlar de forma centralizada e auditável toda a movimentação de materiais, insumos, produtos acabados e ativos biológicos na atividade agropecuária multifazendas, garantindo rastreabilidade de ponta a ponta ("do fornecedor ao cliente"), segurança sanitária, controle de custos e acuracidade de inventário em tempo real.
+
+2. Visão Arquitetural & Escopo (Contextos Delimitados)
+Para mitigar o risco de acoplamento e garantir escalabilidade, o sistema é dividido em 4 macro-módulos lógicos:
+
+CORE-ESTOQUE: Gestão de Saldos, Custos, Lotes, Validades e Regras de Saída (FEFO/FIFO).
+
+WMS-AGRO: Endereçamento físico estruturado (Fazendas, Galpões, Silos, Depósitos, Prateleiras).
+
+OPER-AGRO: Integração com o campo (Aplicações em Talhões, Clima, Máquinas, Produção Industrial e Colheita).
+
+ZOOTECNIA: Gestão individualizada/coletiva de Ativos Biológicos (Animais, Pesagem, Vacinação e Carência Sanitária).
+
+3. Perfis de Usuário
+Administrador: Acesso total, parametrização global do sistema e regras de negócio.
+
+Gerente: Aprovação de alçadas de perdas, relatórios estratégicos e custos.
+
+Almoxarife: Recebimento, conferência, estocagem, inventário físico e separação.
+
+Agrônomo / Veterinário: Emissão de receitas, ordens de aplicação/tratamento e controle de carências.
+
+Operador: Registro de consumo no campo, pesagens e movimentações físicas simples.
+
+Comprador / Financeiro / Auditor: Visualização de custos, faturamento, sugestões de compra e logs imutáveis.
+
+4. Cadastros Estruturais
+RF001 – Cadastro de Produto (Insumos, Peças e Acabados)
+O sistema deve permitir o cadastro detalhado de produtos não vivos.
+
+Atributos: Código Interno Único, Código de Barras (EAN), QR Code, Descrição, Categoria, Subcategoria, Marca/Fabricante, Fornecedor Principal e Secundários, Peso Líquido, Volume, Densidade, Classificação Fiscal (NCM, Origem), Imagem, Ficha Técnica (FISPQ/Segurança), Classe Toxicológica (para Defensivos), Número de Registro no MAPA (Ministério da Agricultura).
+
+Mecanismo de Conversão de Medida: O sistema deve permitir configurar a Unidade de Medida de Compra (Ex: Caixa com 12L) e a Unidade de Medida de Consumo/Aplicação (Ex: ML), exigindo um fator multiplicador de conversão automática.
+
+RN001 (Unicidade): Todo produto deve possuir código único. O sistema não deve permitir duplicidade de Código Interno, EAN ou Registro MAPA.
+
+RN002 (Destinação): O produto deve ser classificado em: Consumível, Revenda, Produção Própria, Imobilizado, Uso Veterinário, Uso Agrícola, Uso Administrativo.
+
+RF002 – Cadastro de Ativos Biológicos (Animais)
+Cadastro especializado para itens vivos, separado do cadastro de insumos tradicionais.
+
+Atributos: Identificador Único (Brinco/RFID/Tatuagem), Lote de Manejo, Espécie, Raça, Sexo, Data de Nascimento/Idade, Peso Atual, Genealogia (Pai/Mãe), Status de Saúde, Localização Atual (Curral/Piquete).
+
+RN003 (Histórico de Peso e Idade): Diferente de insumos fixos, o ativo biológico deve manter um histórico temporal de evolução de peso e alteração automática de categoria de idade (Ex: Bezerro -> Garrote -> Boi).
+
+RF003 – Cadastro e Parametrização de Categorias
+Permitir gerenciar a árvore de categorias (Fertilizantes, Herbicidas, Medicamentos, Vacinas, Grãos, Carnes, Peças, Combustíveis, etc.).
+
+RN004 (Rastreabilidade por Categoria): O cadastro da categoria define se o lote e a validade são obrigatórios. Se ativado, nenhum produto desta categoria pode ter entrada ou saída sem lote/validade informados.
+
+5. Controle de Lotes, Validades e Bloqueios Sanitários
+RF004 – Rastreabilidade e Gestão de Lotes
+Vincular obrigatoriamente dados de fabricação nas entradas de estoque que exijam rastreabilidade.
+
+Atributos do Lote: Número do Lote, Fornecedor, Data de Fabricação, Data de Validade, Certificado de Análise/Pureza (Sementes), Índice de Germinação.
+
+RF005 – Alertas de Validade Dinâmicos por Categoria
+O sistema deve calcular diariamente os dias restantes para o vencimento de cada lote.
+
+RN005 (Janelas de Alerta Parametrizáveis): Em vez de alertas fixos, o tempo de aviso antecedente (Ex: 180, 90, 7 dias) deve ser configurado no cadastro da categoria. Produtos perecíveis (Frutas/Hortaliças) terão janelas de dias, enquanto defensivos terão janelas de meses.
+
+RN006 (Bloqueio Automático por Vencimento): Ao atingir a data de validade (Saldo vencido), o sistema deve alterar automaticamente o status do lote para "Bloqueado para Uso/Venda", impedindo qualquer baixa ou requisição, permitindo apenas movimentação para a área de descarte.
+
+RF006 – Bloqueio por Carência Sanitária (Defensivos e Medicamentos)
+RN007 (Período de Carência - Safety Lock): Ao registrar a aplicação de um medicamento em um animal ou lote de animais (RF015/RF016) ou defensivo em um talhão (RF011), o sistema deve calcular a data fim de carência baseado na bula cadastrada.
+
+Bloqueio Activo: O sistema deve bloquear automaticamente a emissão de notas de venda, guias de transporte (GTA) ou abate dos animais impactados, bem como a colheita/venda do talhão tratado até que o período de carência expire.
+
+6. WMS Agro & Controle de Localização
+RF007 – Endereçamento Físico Complexo
+Controlar a árvore posicional do estoque: Fazenda -> Filial -> Armazém/Galpão -> Silo/Curral/Talhão -> Rua -> Bloco -> Prateleira/Posição.
+
+RN008 (Segregação de Área Crítica): Defensivos agrícolas de alta toxicidade devem ter obrigatoriamente o endereçamento vinculado a depósitos classificados com isolamento de segurança.
+
+7. Movimentações de Estoque (Entradas, Saídas e Trânsito)
+RF008 – Entrada de Estoque
+Registrar entradas por Compra, Produção Própria, Devolução, Bonificação, Importação ou Ajuste de Inventário.
+
+Campos: Fornecedor, Chave da NF-e (xml), Data de Emissão, Data de Recebimento, Valor Unitário, Frete, Impostos Rateados, Quantidade na unidade de compra, Lote, Validade e Almoxarife Responsável.
+
+RN009 (Custo Médio Recalculado): A cada entrada por compra, o sistema deve recalcular o Custo Médio Ponderado de forma imediata e permanente para aquele local de estoque. Quantidades negativas ou valores zerados de compra não são permitidos.
+
+RF009 – Saída de Estoque
+Registrar saídas por Venda, Consumo Interno, Plantio/Aplicação, Uso Veterinário, Perda/Descarte ou Roubo.
+
+RN010 (Regras de Escoamento FEFO/FIFO): Para produtos perecíveis, com lote ou data de validade, o sistema deve obrigar/sugerir a saída baseada no critério FEFO (First Expire, First Out). Para itens não perecíveis (peças, ferramentas), o sistema adotará o FIFO (First In, First Out) ou Custo Médio, conforme parametrização do produto.
+
+RN011 (Proibição de Saldo Negativo): Nenhuma movimentação de saída pode ser consolidada se a quantidade requisitada for maior do que o saldo físico disponível na localização selecionada.
+
+RN012 (Responsabilidade Obrigatória): Toda saída exige a vinculação de um usuário autenticado e um Centro de Custo/Safra correspondente.
+
+RF010 – Transferência Interfazendas e Estoque em Trânsito
+Permitir a transferência de insumos ou animais entre diferentes unidades físicas.
+
+RN013 (Processo em Duas Etapas / Estoque em Trânsito): Não é permitida a entrada automática no destino. A transferência deve obedecer ao fluxo:
+
+Etapa 1 (Despacho): Saída do saldo na origem. O saldo entra sob o status "Estoque em Trânsito - Transportador X".
+
+Etapa 2 (Recebimento): O Almoxarife do destino realiza a conferência física e confirma o recebimento. O saldo só é computado no destino após essa validação. Caso haja divergência (quebra/vazamento no caminho), o sistema exige abertura de registro de perda em trânsito.
+
+8. Inventário, Perdas e Auditoria
+RF011 – Inventário Físico (Geral, Parcial ou Rotativo)
+Registrar a contagem física dos itens e comparar com o saldo logístico do sistema.
+
+RN014 (Bloqueio de Movimentação por Inventário): Ao abrir uma ordem de inventário para um Galpão ou Silo específico, o sistema deve congelar/bloquear temporariamente todas as operações de Entrada e Saída daquela localização exata até que a contagem seja finalizada e o inventário fechado, mitigando furos de saldo durante o processo.
+
+RF012 – Controle de Perdas e Alçadas de Aprovação
+Registrar quebras de estoque por motivos de: Vencimento, Pragas, Mofo, Roubo, Acidente, Contaminação, Descarte de Carência, etc.
+
+RN015 (Fluxo de Alçadas de Aprovação): Toda perda de estoque exige justificativa detalhada e evidência (se aplicável). Perdas acima de um valor monetário 'X' (parametrizável) entram em estado "Pendente de Aprovação" e exigem liberação eletrônica obrigatória do perfil de Gerente ou Diretor antes de ajustarem o saldo real.
+
+9. Operações de Campo (Agrícola e Zootécnica)
+RF013 – Controle de Aplicação Agrícola
+Registrar o consumo de insumos/defensivos diretamente nos Talhões.
+
+Campos: Talhão, Cultura, Safra Vinculada, Área Tratada (ha), Produto, Quantidade Consumida, Operador, Máquina (Implemento utilizado), Engenheiro Agrônomo Responsável, Número do Receituário Agronômico, Data/Hora e Condições Climáticas (Temperatura, Umidade, Velocidade do Vento).
+
+RN016 (Baixa Automatizada e Vínculo Legal): A confirmação da Ordem de Aplicação realiza a baixa automática no estoque de insumos e valida se o Engenheiro possui assinatura ativa cadastrada no sistema.
+
+RF014 – Transformação Industrial (Fábrica de Ração / Beneficiamento)
+Registrar ordens de produção onde matérias-primas são consumidas para gerar um novo produto acabado.
+
+RN017 (Explosão de Materiais / Receita Padrão): Ao iniciar a produção de 1 tonelada de Ração X, o sistema deve consumir proporcionalmente os estoques de Milho, Soja e Núcleos Vitamínicos com base em uma Ficha Técnica pré-cadastrada, gerando a entrada automatizada do lote de Ração no destino.
+
+10. Inteligência de Compras e Rastreabilidade
+RF015 – Sugestão de Compra Inteligente
+Módulo analítico que gera listas automatizadas de reposição de estoque.
+
+RN018 (Variáveis de Reposição): A lógica de cálculo deve avaliar cumulativamente: Ponto de Ressuprimento (Estoque Mínimo), Consumo Médio Diário, Sazonalidade da Safra Atual, Lead Time do Fornecedor (tempo de entrega histórico) e Pedidos de Compra já emitidos mas ainda não entregues.
+
+RF016 – Rastreabilidade "End-to-End" (Recall)
+RN019 (Rastreabilidade Reversa de Segurança): O sistema deve fornecer uma árvore visual onde, a partir do número de lote de um produto final vendido ao cliente, seja possível rastrear: qual dia foi produzido, quais matérias-primas e lotes de insumos foram consumidos, quem foi o fornecedor original e quais outros clientes receberam mercadorias originadas daquele mesmo lote crítico.
+
+11. Requisitos Não Funcionais (RNF)
+RNF001 - Operação Mobile Offline (Crítico para o Campo): O aplicativo utilizado por Operadores, Agrônomos e Veterinários para coletas de dados em silos, currais e talhões deve funcionar em modo 100% Offline. Os dados coletados devem ser armazenados localmente e sincronizados de forma transacional e segura assim que o dispositivo detectar conectividade (Wi-Fi/4G/5G).
+
+RNF002 - Desempenho: Consultas comuns de saldo em tela devem responder em tempo inferior a 1,5 segundos.
+
+RNF003 - Disponibilidade: O ecossistema em nuvem deve possuir arquitetura de alta disponibilidade com SLA mínimo de 99,9%.
+
+RNF004 - Interface Responsiva: Telas operacionais de conferência de WMS e inventário devem ser otimizadas para coletores de dados robustecidos, tablets e smartphones.
+
+RNF005 - Segurança e Trilha de Auditoria Inviolável: Implementar logs estruturados em modelo Append-Only (imutáveis) via banco de dados, registrando Usuário, IP, Data/Hora, Operação, Estado Anterior e Estado Posterior do Registro (RF022). Não é permitida a deleção física (DELETE) de registros de movimentações, apenas a inativação lógica.
+
+RNF006 - Conformidade Legal: Criptografia de dados pessoais em repouso e trânsito em total conformidade com a LGPD.
+
+RNF007 - Integrações de Hardware: Compatibilidade nativa via APIs REST (OpenAPI/Swagger) para balanças de pesagem de caminhões, balanças de gado, leitores portáteis de RFID e sensores de telemetria de silos (IoT).
+
+RNF008 - Exportação: Todos os relatórios devem permitir exportação nativa formatada para PDF, Excel (.xlsx) e CSV.
